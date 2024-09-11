@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="mt-1 mb-5">
+
+    <div class="row justify-content-lg-center">
+      {% for disease in diseases_list %}
+      <div class="col-lg-2 my-3 my-lg-4 gx-3 mx-lg-3 mx-xxl-5 justify-content-center d-flex">
+        <div class="border bg-light">
+          <a href="#">
+            <img src="{{ disease.image.url }}"
+                 alt="{{ disease.title }}"
+                 class="img-fluid">
+          </a>
+          <p class="pt-4 pb-0 px-3">
+            <a class="h5 text-dark text-decoration-none" href="#">
+              {{ disease.title }}
+            </a>
+          </p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+</div>
+
+
+{% endblock %}
