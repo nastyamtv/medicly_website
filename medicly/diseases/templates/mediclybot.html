@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<section class="mediclybot py-5">
+    <div class="container text-center">
+        <h1 class="display-4">Medicly.ai</h1>
+        <p class="lead">Your intelligent healthcare assistant.</p>
+        <img src="{% static 'images/mediclybot.png' %}" alt="Medicly.ai Bot" class="img-fluid mb-4" style="max-width: 300px;">
+        <p>Medicly.ai is designed to help you manage your health, schedule appointments, and provide you with the latest medical information.</p>
+
+        <!-- Чат -->
+        <div class="chat-container">
+            <div class="chat-box" id="chat-box">
+                <!-- Повідомлення чату -->
+            </div>
+            <div class="chat-input">
+                <input type="text" id="user-input" placeholder="Ask a medical question..." class="form-control" />
+                <button id="send-btn" class="btn btn-primary mt-2">Send</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+    .chat-container {
+        max-width: 600px;
+        margin: 0 auto;
+        margin-top: 20px;
+        background-color: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .chat-box {
+        max-height: 300px;
+        overflow-y: auto;
+        margin-bottom: 15px;
+    }
+    .chat-message {
+        margin-bottom: 10px;
+    }
+    .chat-message.bot {
+        text-align: left;
+    }
+    .chat-message.user {
+        text-align: right;
+    }
+</style>
+
+<script>
+    document.getElementById('send-btn').addEventListener('click', function() {
+        const userInput = document.getElementById('user-input').value;
+        if (!userInput.trim()) return;
+
+        // Відображення запитання користувача
+        const chatBox = document.getElementById('chat-box');
+        const userMessage = document.createElement('div');
+        userMessage.className = 'chat-message user';
+        userMessage.innerText = userInput;
+        chatBox.appendChild(userMessage);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Відправка запиту до backend
+        fetch('/api/chat/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ message: userInput })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const botMessage = document.createElement('div');
+            botMessage.className = 'chat-message bot';
+            botMessage.innerText = data.response;  // Відповідь ШІ
+            chatBox.appendChild(botMessage);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        })
+        .catch(error => console.error('Error:', error));
+
+        // Очистити поле вводу
+        document.getElementById('user-input').value = '';
+    });
+</script>
+
+{% endblock %}

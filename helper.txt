@@ -1,0 +1,2 @@
+Запустити сайт:
+py manage.py runserver

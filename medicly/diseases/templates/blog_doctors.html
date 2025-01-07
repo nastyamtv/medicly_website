@@ -1,24 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
 
-<section id="diseases" class="diseases">
+<section id="doctors" class="doctors">
   <div class="container" data-aos="fade-up">
 
     <div class="section-title">
-      <h2>Diseases</h2>
-      <p>Learn More About Common Diseases</p>
+      <h2>Doctors</h2>
+      <p>Meet Our Professional Team</p>
     </div>
 
     <div class="row g-4">
-      {% for disease in diseases_list %}
+      {% for doctor in doctors_list %}
       <div class="col-lg-4 col-md-6">
         <div class="member" data-aos="fade-up" data-aos-delay="100">
           <div class="member-img">
-            <img src="{{ disease.image.url }}" class="img-fluid" alt="{{ disease.name }}">
+            <img src="{{ doctor.image.url }}" class="img-fluid" alt="{{ doctor.name }}">
           </div>
           <div class="member-info">
-            <h4>{{ disease.name }}</h4>
-            <a href="{% url 'disease_detail' disease.id %}" class="btn btn-sm btn-outline-secondary">View Details</a>
+            <h4>{{ doctor.name }}</h4>
+            <span>{{ doctor.degree }}</span>
+            <a href="{% url 'doctor_detail' doctor.id %}" class="btn btn-sm btn-outline-secondary">View</a>
           </div>
         </div>
       </div>

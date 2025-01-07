@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section id="disease-portfolio" class="disease-portfolio py-5">
+  <div class="container">
+
+    <!-- Загальна інформація -->
+    <div class="text-center mb-5">
+      <h1 class="display-4">{{ disease.name }}</h1>
+      <p class="text-muted">{{ disease.description }}</p>
+      <img src="{{ disease.image.url }}" alt="{{ disease.name }}" class="rounded-circle mb-4" style="width: 150px; height: 150px; object-fit: cover;">
+    </div>
+
+    <!-- Симптоми -->
+    <div class="symptoms-section mt-5">
+      <h3 class="text-center mb-4">Symptoms</h3>
+      <div class="row">
+        {% for symptom, frequency in disease.symptoms.items %}
+        <div class="col-md-6 mb-3">
+          <h5 class="text-secondary">{{ symptom }}</h5>
+          <p>Frequency: {{ frequency }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Лікування -->
+    <div class="treatment-section mt-5">
+      <h3 class="text-center mb-4">Treatments</h3>
+      <p>{{ disease.treatments }}</p>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

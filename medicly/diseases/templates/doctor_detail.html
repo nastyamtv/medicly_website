@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section id="doctor-portfolio" class="doctor-portfolio py-5">
+  <div class="container">
+
+    <!-- заг інфа -->
+    <div class="text-center mb-5">
+      <h1 class="display-4">{{ doctor.name }}</h1>
+      <p class="text-muted">{{ doctor.degree }}</p>
+      <img src="{{ doctor.image.url }}" alt="{{ doctor.name }}" class="rounded-circle mb-4" style="width: 150px; height: 150px; object-fit: cover;">
+    </div>
+
+    <!-- Статістік -->
+    <div class="row text-center mb-5">
+      <div class="col-md-3">
+        <h2 class="display-6 text-primary">{{ doctor.patients }}</h2>
+        <p class="text-muted">Happy Clients</p>
+      </div>
+      <div class="col-md-3">
+        <h2 class="display-6 text-primary">{{ doctor.projects }}</h2>
+        <p class="text-muted">Operations</p>
+      </div>
+      <div class="col-md-3">
+        <h2 class="display-6 text-primary">{{ doctor.hours_support }}</h2>
+        <p class="text-muted">Working hours</p>
+      </div>
+      <div class="col-md-3">
+        <h2 class="display-6 text-primary">{{ doctor.experience_years }}</h2>
+        <p class="text-muted">Years of Experience</p>
+      </div>
+    </div>
+
+    <!-- Скіли -->
+    <div class="skills-section mt-5">
+      <h3 class="text-center mb-4">Skills</h3>
+      <div class="row">
+        {% for skill, proficiency in doctor.skills.items %}
+        <div class="col-md-6 mb-3">
+          <h5 class="text-secondary">{{ skill }}</h5>
+          <div class="progress">
+            <div class="progress-bar bg-info" role="progressbar"
+                 style="width: {{ proficiency }}%;"
+                 aria-valuenow="{{ proficiency }}"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
+              {{ proficiency }}%
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

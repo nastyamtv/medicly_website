@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<!-- Логотип -->
+<section class="hero bg-light py-5">
+    <div class="container text-center">
+        <img src="{% static 'images/logo.jpg' %}" alt="Medicly Logo" class="mb-4" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
+        <h1 class="display-4">Welcome to Medicly</h1>
+        <p class="lead">Your trusted partner in finding the best healthcare services.</p>
+        <a href="/diseases/doctors/" class="btn btn-primary btn-lg">Meet Our Doctors</a>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features py-5">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="icon mb-3">
+                    <i class="fas fa-user-md fa-3x text-primary"></i>
+                </div>
+                <h4>Experienced Doctors</h4>
+                <p>Our team includes top-rated doctors with years of experience in various fields.</p>
+            </div>
+            <div class="col-md-4">
+                <div class="icon mb-3">
+                    <i class="fas fa-hand-holding-heart fa-3x text-primary"></i>
+                </div>
+                <h4>Patient-Centered Care</h4>
+                <p>We prioritize your health and well-being above all else.</p>
+            </div>
+            <div class="col-md-4">
+                <div class="icon mb-3">
+                    <i class="fas fa-clinic-medical fa-3x text-primary"></i>
+                </div>
+                <h4>Modern Facilities</h4>
+                <p>Our network includes state-of-the-art clinics and hospitals.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About Doctors Section -->
+<section class="about-doctors bg-light py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2>Our Doctors</h2>
+            <p>Meet the professionals who make a difference.</p>
+        </div>
+        <div class="row">
+            {% for doctor in doctors %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <img src="{{ doctor.image.url }}" class="card-img-top" alt="{{ doctor.name }}">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">{{ doctor.name }}</h5>
+                        <p class="card-text">{{ doctor.degree }}</p>
+                        <a href="/diseases/doctors/{{ doctor.id }}/" class="btn btn-outline-primary btn-sm">View Profile</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials py-5">
+    <div class="container text-center">
+        <h2>What Our Patients Say</h2>
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <blockquote class="blockquote">
+                    <p>"The care I received was exceptional! The doctors are truly the best."</p>
+                    <footer class="blockquote-footer">Jane Doe</footer>
+                </blockquote>
+            </div>
+            <div class="col-md-4">
+                <blockquote class="blockquote">
+                    <p>"Medicly provided excellent service. I highly recommend them."</p>
+                    <footer class="blockquote-footer">John Smith</footer>
+                </blockquote>
+            </div>
+            <div class="col-md-4">
+                <blockquote class="blockquote">
+                    <p>"I felt cared for and respected throughout my entire treatment."</p>
+                    <footer class="blockquote-footer">Emily Johnson</footer>
+                </blockquote>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="faq bg-light py-5">
+    <div class="container">
+        <h2 class="text-center">Frequently Asked Questions</h2>
+        <div class="accordion mt-4" id="faqAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingOne">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        What services do you offer?
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        We offer a wide range of healthcare services, including general practice, specialist consultations, and modern diagnostic procedures.
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingTwo">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                        How can I book an appointment?
+                    </button>
+                </h2>
+                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        You can book an appointment through our website or by calling our customer service hotline.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="py-4 bg-dark text-white">
+    <div class="container text-center">
+        <p>© 2025 Medicly. All Rights Reserved.</p>
+        <p>Contact us: <a href="mailto:info@medicly.com" class="text-white">info@medicly.com</a> | Phone: +1 (800) 555-0199</p>
+    </div>
+</footer>
+
+{% endblock %}

@@ -6,5 +6,12 @@ from diseases import views
 
 urlpatterns = [
     path('', views.index),
-    path('blog/', views.blog_diseases),
+    path('home/', views.home, name='home'),
+
+    path('diseases/', views.blog_diseases, name='diseases'),
+    path('diseases/<int:disease_id>/', views.disease_detail, name='disease_detail'),
+    path('doctors/', views.blog_doctors, name='doctors'),
+    path('doctors/<int:doctor_id>/', views.doctor_detail, name='doctor_detail'),
+    path('mediclybot/', views.mediclybot, name='mediclybot'),  # Новий маршрут
+
 ]
