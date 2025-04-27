@@ -8,3 +8,6 @@ class DoctorAdmin(admin.ModelAdmin):
     list_display = ('name', 'birthday', 'age', 'phone', 'degree', 'email')
     list_filter = ('degree',)
     search_fields = ('name', 'email')
+
+class DiseaseAdmin(admin.ModelAdmin):
+    list_display = ('name', 'short_description')

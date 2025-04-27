@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="container mt-4">
+    <h1>Модель аналізу захворювань</h1>
+    <p>Ця сторінка використовується для роботи з моделлю діагностики захворювань.</p>
+
+    <div class="row">
+        <!-- Ліва частина: завантаження файлу -->
+        <div class="col-md-6">
+            <form action="{% url 'pneuscan' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                <label for="file">Завантажити зображення:</label>
+                <input type="file" id="file" name="file" class="form-control mb-3">
+                <button type="submit" class="btn btn-primary">Аналізувати</button>
+            </form>
+        </div>
+
+        <!-- Права частина: вивід результату -->
+        <div class="col-md-6">
+            <h4>Результат аналізу:</h4>
+            {% if result %}
+                <div class="alert alert-info">{{ result }}</div>
+            {% else %}
+                <div class="alert alert-secondary">Немає результату</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}

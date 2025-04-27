@@ -32,9 +32,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'diseases' %}">Diseases</a>
                     </li>
-
                     <li class="nav-item">
                         <a class="nav-link" href="/diseases/doctors/">Doctors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/diseases/pneuscan/">Model</a>
                     </li>
                 </ul>
                 <!-- Правий блок навбару -->
@@ -42,12 +44,24 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/diseases/mediclybot/">Medicly.ai</a>
                     </li>
+
                 </ul>
                 <!-- Форма пошуку -->
                 <form class="d-flex ms-3" role="search">
                     <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
                     <button class="btn btn-outline-success" type="submit">Search</button>
                 </form>
+                <!-- Кнопка вибору мови -->
+                <div class="dropdown ms-3">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="languageDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        Language
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
+                        <li><a class="dropdown-item" href="?lang=en">English Or Spanish?</a></li>
+                        <li><a class="dropdown-item" href="?lang=uk">Українська</a></li>
+
+                    </ul>
+                </div>
             </div>
         </div>
     </nav>
@@ -73,5 +87,7 @@
             once: true // Анімація відбувається лише один раз
         });
     </script>
+
+    {% block script_block %}{% endblock %}
 </body>
 </html>

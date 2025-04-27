@@ -34,6 +34,50 @@ def doctor_detail(request, doctor_id):
     context = {"doctor": doctor}
     return render(request, 'doctor_detail.html', context)
 
-def mediclybot(request):
-    return render(request, 'mediclybot.html')  # Створіть відповідний шаблон
+from django.shortcuts import render
+import random  # Поки що рандомний результат для тесту
+
+def pneuscan_view(request):
+    result = None
+
+    if request.method == "POST" and request.FILES.get("file"):
+        # Симуляція аналізу: випадковий результат "Хворий" або "Не хворий"
+        result = random.choice(["Хворий", "Не хворий"])
+
+    return render(request, 'pneuscan.html', {"result": result})
+
+
+
+import openai
+from django.http import JsonResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+openai.api_key = "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"  # Використовуй свій OpenAI API ключ
+
+# Відображення сторінки
+def mediclybot_view(request):
+    return render(request, "mediclybot.html")
+
+# Обробка повідомлень у чаті
+#@csrf_exempt
+def mediclybot_api(request):
+    if request.method == "POST":
+        try:
+            #return JsonResponse({"response": "Hello"}) # for debug
+            data = request.POST["data"]
+            data = json.loads(data)
+            user_message = data["message"]
+            # Запит до OpenAI
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "user", "content": user_message}]
+            )
+            return JsonResponse({"response": user_message})
+            #return JsonResponse({"response": response["choices"][0]["message"]["content"]})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+    else:
+        return JsonResponse({"error": "Метод не підтримується"}, status=405)
 
