@@ -1,55 +1,1197 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-4">
-    <h1>Медичний чат-бот</h1>
-    <div class="card p-3">
-        <div id="chat-box" class="border p-3 mb-3" style="height: 300px; overflow-y: auto; background: #f8f9fa;">
-            <p><strong>Бот:</strong> Вітаю! Я можу допомогти вам з попереднім аналізом симптомів.</p>
+<div class="medical-chatbot-container">
+  <div class="chatbot-header">
+    <h2><i class="fas fa-comment-medical"></i> Medical Assistant</h2>
+    <p class="subtitle">Personalized help with your symptoms</p>
+  </div>
+
+  <div class="chatbot-body">
+    <div class="chat-window" id="chatWindow">
+      <div class="chat-message bot-message">
+        <div class="avatar"><i class="fas fa-robot"></i></div>
+        <div class="message-content">
+          <p>Hello! I'm your medical assistant. Please describe what's bothering you.</p>
+          <p class="hint"><i class="fas fa-lightbulb"></i> Start by describing your symptoms, for example: "Back pain that worsens at night"</p>
         </div>
-        <form id="chat-form">
-            <div class="input-group">
-                <input type="text" id="user-input" class="form-control" placeholder="Введіть ваші симптоми...">
-                <button type="submit" class="btn btn-primary">Надіслати</button>
-            </div>
-        </form>
+      </div>
     </div>
+
+    <form method="POST" class="chat-form" id="chatForm">
+      {% csrf_token %}
+      <div class="input-group">
+        <textarea id="symptoms" name="symptoms" rows="2" placeholder="Describe your symptoms..." required></textarea>
+        <button type="submit" class="send-button">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+      <div class="quick-actions">
+        <button type="button" class="quick-btn" data-symptom="Headache"><i class="fas fa-head-side-virus"></i> Headache</button>
+        <button type="button" class="quick-btn" data-symptom="Fever"><i class="fas fa-temperature-high"></i> Fever</button>
+        <button type="button" class="quick-btn" data-symptom="Back pain"><i class="fas fa-bone"></i> Back pain</button>
+        <button type="button" class="quick-btn" data-symptom="Stomach pain"><i class="fas fa-stomach"></i> Stomach pain</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="disclaimer">
+    <p><i class="fas fa-info-circle"></i> This bot does not replace a doctor. For serious symptoms, seek medical help.</p>
+  </div>
 </div>
 
-
-{% endblock %}
-
-{% block script_block %}
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
-document.getElementById("chat-form").addEventListener("submit", function(event) {
-    event.preventDefault();
-    let userInput = document.getElementById("user-input").value;
-    if (userInput.trim() === "") return;
+$(document).ready(function() {
+  // Store conversation history
+  const chatHistory = {
+    symptoms: [],
+    answers: {},
+    currentStep: 0,
+    currentSymptom: null
+  };
 
-    let chatBox = document.getElementById("chat-box");
-    chatBox.innerHTML += `<p><strong>Ви:</strong> ${userInput}</p>`;
+  // Color scheme
+  const colors = {
+    primary: '#93bcc2',
+    secondary: '#c2dde2',
+    accent: '#6ba7b0',
+    text: '#2c3e50',
+    light: '#e8f4f8'
+  };
 
-    POST_URL = "{% url 'mediclybot_api' %}";
-    var inputData = {
-          csrfmiddlewaretoken: "{{ csrf_token }}",
-          data: JSON.stringify({ message: userInput }),
-        };
-    $.ajax({
-        url: POST_URL,
-        type: "POST",
-        data: inputData,
-        success: function (data) {
-          console.log(data);
-          chatBox.innerHTML += `<p><strong>Бот:</strong> ${data.response}</p>`;
-          chatBox.scrollTop = chatBox.scrollHeight;
+  // Apply colors
+  applyColors(colors);
+
+  // Add message with animation
+  function addMessage(content, isUser = false, isTyping = false) {
+    const chatWindow = $('#chatWindow');
+    const messageClass = isUser ? 'user-message' : 'bot-message';
+    const avatarIcon = isUser ? 'fa-user' : 'fa-robot';
+
+    const messageHtml = `
+      <div class="chat-message ${messageClass}" style="opacity: 0; transform: translateY(10px);">
+        <div class="avatar"><i class="fas ${avatarIcon}"></i></div>
+        <div class="message-content">
+          ${isTyping ? '<div class="typing-indicator"><span></span><span></span><span></span></div>' : content}
+        </div>
+      </div>
+    `;
+
+    chatWindow.append(messageHtml);
+    const $newMessage = chatWindow.children().last();
+
+    $newMessage.animate({
+      opacity: 1,
+      transform: 'translateY(0)'
+    }, 200);
+
+    chatWindow.scrollTop(chatWindow[0].scrollHeight);
+    return $newMessage;
+  }
+
+  // Quick buttons handling
+  $('.quick-btn').click(function() {
+    const symptom = $(this).data('symptom');
+    $('#symptoms').val(symptom).focus();
+  });
+
+  // Form handling
+  $('#chatForm').submit(function(e) {
+    e.preventDefault();
+
+    const message = $('#symptoms').val().trim();
+    if (!message) return;
+
+    // Add user message
+    addMessage(`<p>${message}</p>`, true);
+    $('#symptoms').val('');
+
+    // Analyze user message
+    analyzeUserMessage(message);
+  });
+
+  // Analyze user message
+  function analyzeUserMessage(message) {
+    const lowerMsg = message.toLowerCase();
+
+    // Store symptoms
+    if (!isGreeting(lowerMsg) && !isThanks(lowerMsg)) {
+      chatHistory.symptoms.push(message);
+    }
+
+    // Send to server or process locally
+    if (isGreeting(lowerMsg)) {
+      showGreetingResponse();
+    }
+    else if (isThanks(lowerMsg)) {
+      showThanksResponse();
+    }
+    else if (lowerMsg.includes('head') || lowerMsg.includes('headache') || chatHistory.currentSymptom === 'headache') {
+      processHeadacheFlow(message);
+    }
+    else if (lowerMsg.includes('fever') || lowerMsg.includes('temperature') || chatHistory.currentSymptom === 'fever') {
+      processFeverFlow(message);
+    }
+    else if (lowerMsg.includes('back') || lowerMsg.includes('spine') || chatHistory.currentSymptom === 'back_pain') {
+      processBackPainFlow(message);
+    }
+    else if (lowerMsg.includes('stomach') || lowerMsg.includes('abdom') || chatHistory.currentSymptom === 'stomach_pain') {
+      processStomachPainFlow(message);
+    }
+    else if (lowerMsg.includes('chest') || lowerMsg.includes('heart') || chatHistory.currentSymptom === 'chest_pain') {
+      processChestPainFlow(message);
+    }
+    else if (lowerMsg.includes('cough') || chatHistory.currentSymptom === 'cough') {
+      processCoughFlow(message);
+    }
+    else {
+      // If it's an answer to a question
+      if (chatHistory.currentStep > 0) {
+        processQuestionAnswer(message);
+      } else {
+        // Standard medical response
+        getMedicalResponse(message);
+      }
+    }
+  }
+
+  // Headache flow processing
+  function processHeadacheFlow(message) {
+    if (chatHistory.currentStep === 0) {
+      // Start headache analysis
+      chatHistory.currentSymptom = 'headache';
+      chatHistory.currentStep = 1;
+      chatHistory.answers = {};
+
+      setTimeout(() => {
+        addMessage(`
+          <p>I understand you have a headache. Let's clarify the details:</p>
+          <div class="options-container">
+            <p><strong>1. Where exactly do you feel the pain?</strong></p>
+            <div class="options-grid">
+              <button class="option-btn" data-answer="forehead">Forehead</button>
+              <button class="option-btn" data-answer="temples">Temples</button>
+              <button class="option-btn" data-answer="back of head">Back of head</button>
+              <button class="option-btn" data-answer="whole head">Whole head</button>
+              <button class="option-btn" data-answer="other location">Other location</button>
+            </div>
+          </div>
+        `);
+
+        // Add option buttons handler
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 1) {
+      // Save pain location
+      chatHistory.answers.location = message;
+      chatHistory.currentStep = 2;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>2. What is the pain intensity?</strong> Rate from 1 to 10, where 10 is the most severe pain:</p>
+          <div class="intensity-scale">
+            <div class="scale-labels">
+              <span>1</span>
+              <span>10</span>
+            </div>
+            <div class="scale-options">
+              ${Array.from({length: 10}, (_, i) =>
+                `<button class="scale-btn" data-value="${i+1}">${i+1}</button>`
+              ).join('')}
+            </div>
+          </div>
+        `);
+
+        $('.scale-btn').click(function() {
+          const value = $(this).data('value');
+          $('#symptoms').val(value);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 2) {
+      // Save intensity
+      chatHistory.answers.intensity = message;
+      chatHistory.currentStep = 3;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>3. Is the headache accompanied by additional symptoms?</strong></p>
+          <div class="options-container">
+            <div class="options-grid">
+              <button class="option-btn" data-answer="nausea or vomiting">Nausea/vomiting</button>
+              <button class="option-btn" data-answer="light sensitivity">Light sensitivity</button>
+              <button class="option-btn" data-answer="sound sensitivity">Sound sensitivity</button>
+              <button class="option-btn" data-answer="vision problems">Vision problems</button>
+              <button class="option-btn" data-answer="no additional symptoms">None</button>
+              <button class="option-btn" data-answer="other symptoms">Other</button>
+            </div>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 3) {
+      // Save additional symptoms
+      chatHistory.answers.additionalSymptoms = message;
+      showHeadacheConclusion();
+      chatHistory.currentStep = 0;
+      chatHistory.currentSymptom = null;
+    }
+  }
+
+  // Fever flow processing
+  function processFeverFlow(message) {
+    if (chatHistory.currentStep === 0) {
+      // Start fever analysis
+      chatHistory.currentSymptom = 'fever';
+      chatHistory.currentStep = 1;
+      chatHistory.answers = {};
+
+      setTimeout(() => {
+        addMessage(`
+          <p>I understand you have a fever. Let's clarify the details:</p>
+          <div class="options-container">
+            <p><strong>1. What is your temperature?</strong></p>
+            <div class="options-grid">
+              <button class="option-btn" data-answer="below 37.5">Below 37.5°C (low-grade)</button>
+              <button class="option-btn" data-answer="37.5-38.5">37.5-38.5°C (moderate)</button>
+              <button class="option-btn" data-answer="38.5-40">38.5-40°C (high)</button>
+              <button class="option-btn" data-answer="above 40">Above 40°C (very high)</button>
+              <button class="option-btn" data-answer="not sure exactly">Not sure exactly</button>
+            </div>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 1) {
+      // Save temperature level
+      chatHistory.answers.temperatureLevel = message;
+      chatHistory.currentStep = 2;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>2. How long has the fever lasted?</strong></p>
+          <div class="options-grid">
+            <button class="option-btn" data-answer="less than a day">Less than a day</button>
+            <button class="option-btn" data-answer="1-3 days">1-3 days</button>
+            <button class="option-btn" data-answer="more than 3 days">More than 3 days</button>
+            <button class="option-btn" data-answer="more than a week">More than a week</button>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 2) {
+      // Save duration
+      chatHistory.answers.duration = message;
+      chatHistory.currentStep = 3;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>3. Is the fever accompanied by other symptoms?</strong></p>
+          <div class="options-grid">
+            <button class="option-btn" data-answer="chills">Chills</button>
+            <button class="option-btn" data-answer="sweating">Sweating</button>
+            <button class="option-btn" data-answer="cough">Cough</button>
+            <button class="option-btn" data-answer="sore throat">Sore throat</button>
+            <button class="option-btn" data-answer="nausea or vomiting">Nausea/vomiting</button>
+            <button class="option-btn" data-answer="rash">Rash</button>
+            <button class="option-btn" data-answer="no other symptoms">None</button>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 3) {
+      // Save additional symptoms
+      chatHistory.answers.additionalSymptoms = message;
+      showFeverConclusion();
+      chatHistory.currentStep = 0;
+      chatHistory.currentSymptom = null;
+    }
+  }
+
+  // Back pain flow processing
+  function processBackPainFlow(message) {
+    if (chatHistory.currentStep === 0) {
+      // Start back pain analysis
+      chatHistory.currentSymptom = 'back_pain';
+      chatHistory.currentStep = 1;
+      chatHistory.answers = {};
+
+      setTimeout(() => {
+        addMessage(`
+          <p>I understand you have back pain. Let's clarify the details:</p>
+          <div class="options-container">
+            <p><strong>1. Where exactly do you feel the pain?</strong></p>
+            <div class="options-grid">
+              <button class="option-btn" data-answer="lower back">Lower back</button>
+              <button class="option-btn" data-answer="between shoulder blades">Between shoulder blades</button>
+              <button class="option-btn" data-answer="neck area">Neck area</button>
+              <button class="option-btn" data-answer="whole back">Whole back</button>
+            </div>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 1) {
+      // Save pain location
+      chatHistory.answers.location = message;
+      chatHistory.currentStep = 2;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>2. What is the pain intensity?</strong> Rate from 1 to 10, where 10 is the most severe pain:</p>
+          <div class="intensity-scale">
+            <div class="scale-labels">
+              <span>1</span>
+              <span>10</span>
+            </div>
+            <div class="scale-options">
+              ${Array.from({length: 10}, (_, i) =>
+                `<button class="scale-btn" data-value="${i+1}">${i+1}</button>`
+              ).join('')}
+            </div>
+          </div>
+        `);
+
+        $('.scale-btn').click(function() {
+          const value = $(this).data('value');
+          $('#symptoms').val(value);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 2) {
+      // Save intensity
+      chatHistory.answers.intensity = message;
+      chatHistory.currentStep = 3;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>3. Does the pain radiate to other parts of the body?</strong></p>
+          <div class="options-grid">
+            <button class="option-btn" data-answer="no">No</button>
+            <button class="option-btn" data-answer="leg">Leg</button>
+            <button class="option-btn" data-answer="arm">Arm</button>
+            <button class="option-btn" data-answer="ribs">Ribs</button>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 3) {
+      // Save pain radiation
+      chatHistory.answers.radiation = message;
+      showBackPainConclusion();
+      chatHistory.currentStep = 0;
+      chatHistory.currentSymptom = null;
+    }
+  }
+
+  // Stomach pain flow processing
+  function processStomachPainFlow(message) {
+    if (chatHistory.currentStep === 0) {
+      // Start stomach pain analysis
+      chatHistory.currentSymptom = 'stomach_pain';
+      chatHistory.currentStep = 1;
+      chatHistory.answers = {};
+
+      setTimeout(() => {
+        addMessage(`
+          <p>I understand you have stomach pain. Let's clarify the details:</p>
+          <div class="options-container">
+            <p><strong>1. Where exactly do you feel the pain?</strong></p>
+            <div class="options-grid">
+              <button class="option-btn" data-answer="upper abdomen">Upper abdomen</button>
+              <button class="option-btn" data-answer="lower abdomen">Lower abdomen</button>
+              <button class="option-btn" data-answer="left side">Left side</button>
+              <button class="option-btn" data-answer="right side">Right side</button>
+              <button class="option-btn" data-answer="whole abdomen">Whole abdomen</button>
+            </div>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 1) {
+      // Save pain location
+      chatHistory.answers.location = message;
+      chatHistory.currentStep = 2;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>2. What is the nature of the pain?</strong></p>
+          <div class="options-grid">
+            <button class="option-btn" data-answer="sharp">Sharp</button>
+            <button class="option-btn" data-answer="aching">Aching</button>
+            <button class="option-btn" data-answer="cramping">Cramping</button>
+            <button class="option-btn" data-answer="stabbing">Stabbing</button>
+            <button class="option-btn" data-answer="dull">Dull</button>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 2) {
+      // Save pain type
+      chatHistory.answers.type = message;
+      chatHistory.currentStep = 3;
+
+      setTimeout(() => {
+        addMessage(`
+          <p><strong>3. Is the pain accompanied by other symptoms?</strong></p>
+          <div class="options-grid">
+            <button class="option-btn" data-answer="nausea or vomiting">Nausea/vomiting</button>
+            <button class="option-btn" data-answer="diarrhea">Diarrhea</button>
+            <button class="option-btn" data-answer="constipation">Constipation</button>
+            <button class="option-btn" data-answer="fever">Fever</button>
+            <button class="option-btn" data-answer="bloating">Bloating</button>
+            <button class="option-btn" data-answer="no other symptoms">None</button>
+          </div>
+        `);
+
+        $('.option-btn').click(function() {
+          const answer = $(this).data('answer');
+          $('#symptoms').val(answer);
+          $('#chatForm').submit();
+        });
+      }, 800);
+    }
+    else if (chatHistory.currentStep === 3) {
+      // Save additional symptoms
+      chatHistory.answers.additionalSymptoms = message;
+      showStomachPainConclusion();
+      chatHistory.currentStep = 0;
+      chatHistory.currentSymptom = null;
+    }
+  }
+
+  // Headache conclusion
+  function showHeadacheConclusion() {
+    setTimeout(() => {
+      // Determine headache type
+      let headacheType = "unspecified headache";
+      let recommendation = "";
+      let specialist = "neurologist";
+
+      const location = chatHistory.answers.location || '';
+      const intensity = parseInt(chatHistory.answers.intensity) || 0;
+      const symptoms = chatHistory.answers.additionalSymptoms || '';
+
+      // Determine pain type by location
+      if (location.includes('temples') || location.includes('whole head')) {
+        headacheType = "tension headache";
+        recommendation = "You may have a tension headache. Recommendations:";
+        specialist = "neurologist";
+      }
+      else if (location.includes('forehead') || location.includes('back of head')) {
+        headacheType = "cluster headache";
+        recommendation = "Your symptoms may indicate a cluster headache. Recommendations:";
+        specialist = "neurologist";
+      }
+
+      // Additional recommendations by intensity
+      if (intensity >= 7) {
+        recommendation += "\n- Take pain relievers (ibuprofen, paracetamol)";
+        recommendation += "\n- Rest in a quiet, dark room";
+        recommendation += "\n- Drink a glass of water";
+      } else if (intensity >= 4) {
+        recommendation += "\n- Rest for 15-20 minutes";
+        recommendation += "\n- Gently massage your temples";
+      }
+
+      // Additional recommendations by symptoms
+      if (symptoms.includes('nausea') || symptoms.includes('vomiting')) {
+        recommendation += "\n- For nausea, you can drink mint tea";
+        specialist = "neurologist or gastroenterologist";
+      }
+      if (symptoms.includes('light sensitivity') || symptoms.includes('sound sensitivity')) {
+        recommendation += "\n- Avoid bright lights and loud sounds";
+      }
+
+      // Final message
+      showFinalConclusion({
+        symptom: headacheType,
+        details: {
+          "Location": location || 'not specified',
+          "Intensity": intensity ? `${intensity}/10` : 'not specified',
+          "Additional symptoms": symptoms || 'none'
         },
-        error: function(err) {
-            console.log(err);
-        },
-    }); // end ajax
+        recommendation: recommendation,
+        specialist: specialist,
+        icon: "fas fa-head-side-virus"
+      });
+    }, 800);
+  }
 
-    document.getElementById("user-input").value = "";
+  // Fever conclusion
+  function showFeverConclusion() {
+    setTimeout(() => {
+      let feverType = "elevated temperature";
+      let recommendation = "";
+      let specialist = "general practitioner";
+
+      const level = chatHistory.answers.temperatureLevel || '';
+      const duration = chatHistory.answers.duration || '';
+      const symptoms = chatHistory.answers.additionalSymptoms || '';
+
+      // Determine fever type
+      if (level.includes('above 40')) {
+        feverType = "very high fever";
+        recommendation = "You have a dangerously high temperature. Immediate actions:";
+        specialist = "emergency services";
+      }
+      else if (level.includes('38.5-40')) {
+        feverType = "high fever";
+        recommendation = "You have a high fever. Recommendations:";
+        specialist = "general practitioner or pediatrician (for children)";
+      }
+      else {
+        feverType = "moderately elevated temperature";
+        recommendation = "You have a moderately elevated temperature. Recommendations:";
+      }
+
+      // Additional recommendations
+      if (level.includes('38.5') || level.includes('high')) {
+        recommendation += "\n- Take fever reducers (paracetamol, ibuprofen)";
+        recommendation += "\n- Maintain hydration (drink at least 2 liters of water per day)";
+      }
+
+      if (duration.includes('more than 3')) {
+        recommendation += "\n- Prolonged fever requires mandatory medical examination";
+      }
+
+      if (symptoms.includes('cough') || symptoms.includes('throat')) {
+        recommendation += "\n- Possible signs of ARVI or flu";
+        specialist = "general practitioner or ENT";
+      }
+
+      if (symptoms.includes('rash')) {
+        recommendation += "\n- Rash may indicate an allergic reaction or infectious disease";
+        specialist = "general practitioner or dermatologist";
+      }
+
+      showFinalConclusion({
+        symptom: feverType,
+        details: {
+          "Temperature level": level || 'not specified',
+          "Duration": duration || 'not specified',
+          "Additional symptoms": symptoms || 'none'
+        },
+        recommendation: recommendation,
+        specialist: specialist,
+        icon: "fas fa-temperature-high",
+        emergency: level.includes('above 40')
+      });
+    }, 800);
+  }
+
+  // Back pain conclusion
+  function showBackPainConclusion() {
+    setTimeout(() => {
+      let painType = "back pain";
+      let recommendation = "";
+      let specialist = "neurologist or orthopedist";
+
+      const location = chatHistory.answers.location || '';
+      const intensity = parseInt(chatHistory.answers.intensity) || 0;
+      const radiation = chatHistory.answers.radiation || '';
+
+      // Determine pain type
+      if (location.includes('lower back')) {
+        painType = "lumbago (lower back pain)";
+        recommendation = "You may have lumbago or spine problems. Recommendations:";
+      }
+      else if (location.includes('neck')) {
+        painType = "cervical osteochondrosis";
+        recommendation = "You may have problems with the cervical spine. Recommendations:";
+      }
+
+      // General recommendations
+      recommendation += "\n- Avoid sudden movements and heavy lifting";
+      recommendation += "\n- Use a comfortable sleeping position";
+
+      if (intensity >= 7) {
+        recommendation += "\n- You can take pain relievers (ibuprofen, diclofenac)";
+      }
+
+      if (radiation.includes('leg')) {
+        recommendation += "\n- Pain radiating to the leg may indicate sciatica or herniated disc";
+        specialist = "neurologist or vertebrologist";
+      }
+
+      showFinalConclusion({
+        symptom: painType,
+        details: {
+          "Location": location || 'not specified',
+          "Intensity": intensity ? `${intensity}/10` : 'not specified',
+          "Pain radiation": radiation || 'none'
+        },
+        recommendation: recommendation,
+        specialist: specialist,
+        icon: "fas fa-bone"
+      });
+    }, 800);
+  }
+
+  // Stomach pain conclusion
+  function showStomachPainConclusion() {
+    setTimeout(() => {
+      let painType = "stomach pain";
+      let recommendation = "";
+      let specialist = "general practitioner or gastroenterologist";
+
+      const location = chatHistory.answers.location || '';
+      const type = chatHistory.answers.type || '';
+      const symptoms = chatHistory.answers.additionalSymptoms || '';
+      const intensity = parseInt(chatHistory.answers.intensity) || 0;
+
+      // Determine pain type
+      if (location.includes('upper')) {
+        painType = "upper abdominal pain";
+        recommendation = "Possible problems with stomach, pancreas or gallbladder. Recommendations:";
+      }
+      else if (location.includes('lower')) {
+        painType = "lower abdominal pain";
+        recommendation = "Possible problems with intestines or genitourinary system. Recommendations:";
+        specialist = symptoms.includes('fever') ? "surgeon or gynecologist" : "gastroenterologist";
+      }
+      else if (location.includes('right')) {
+        painType = "right side abdominal pain";
+        recommendation = "Possible problems with liver, gallbladder or appendix. Recommendations:";
+        specialist = "surgeon or gastroenterologist";
+      }
+
+      // General recommendations
+      if (type.includes('sharp')) {
+        recommendation += "\n- Sharp pain requires immediate medical consultation";
+        if (location.includes('right')) {
+          recommendation += "\n- Sharp pain in the right side may be a sign of appendicitis";
+        }
+      } else {
+        recommendation += "\n- Follow a diet (light food, no fatty, spicy, alcohol)";
+        recommendation += "\n- Drink enough water";
+      }
+
+      if (symptoms.includes('fever')) {
+        recommendation += "\n- Fever may indicate an infectious process";
+      }
+
+      showFinalConclusion({
+        symptom: painType,
+        details: {
+          "Location": location || 'not specified',
+          "Pain type": type || 'not specified',
+          "Additional symptoms": symptoms || 'none'
+        },
+        recommendation: recommendation,
+        specialist: specialist,
+        icon: "fas fa-stomach",
+        emergency: type.includes('sharp') && intensity >= 7
+      });
+    }, 800);
+  }
+
+  // General function for showing conclusion
+  function showFinalConclusion(data) {
+    const detailsHtml = Object.entries(data.details)
+      .map(([key, value]) => `<p><i class="fas fa-circle"></i> <strong>${key}:</strong> ${value}</p>`)
+      .join('');
+
+    const emergencyWarning = data.emergency ? `
+      <div class="emergency-warning">
+        <i class="fas fa-exclamation-triangle"></i> <strong>Emergency!</strong> Your symptoms require immediate medical attention! Call emergency services at 103!
+      </div>
+    ` : '';
+
+    addMessage(`
+      <div class="diagnosis">
+        <h4><i class="${data.icon}"></i> Preliminary analysis of your condition:</h4>
+        <div class="symptoms-summary">
+          <p><strong>Main symptom:</strong> ${data.symptom}</p>
+          ${detailsHtml}
+        </div>
+
+        <div class="recommendation">
+          <h4>Recommendations:</h4>
+          <div class="recommendation-text">${data.recommendation.replace(/\n/g, '<br>')}</div>
+          <div class="specialist-recommendation">
+            <i class="fas fa-user-md"></i> <strong>Recommended to consult:</strong> ${data.specialist}
+          </div>
+        </div>
+
+        ${emergencyWarning}
+
+        <div class="follow-up">
+          <p>If symptoms worsen or new symptoms appear, seek medical attention immediately.</p>
+          <p>Would you like to describe other symptoms?</p>
+        </div>
+      </div>
+    `);
+  }
+
+  // Helper functions
+  function isGreeting(message) {
+    return message.includes('hi') || message.includes('hello') || message.includes('good');
+  }
+
+  function isThanks(message) {
+    return message.includes('thank') || message.includes('thanks');
+  }
+
+  function showGreetingResponse() {
+    addMessage(`
+      <p>Hello! I'm a medical assistant. Describe your symptoms and I'll try to help.</p>
+      <p>For example: "Back pain that worsens with movement" or "Sharp stomach pain with nausea".</p>
+    `);
+  }
+
+  function showThanksResponse() {
+    addMessage(`
+      <p>You're welcome! Feel free to ask if you have other symptoms.</p>
+      <p>Remember to seek medical help immediately if your condition worsens.</p>
+    `);
+  }
+
+  // Apply color scheme
+  function applyColors(colors) {
+    $('.chatbot-header').css('background-color', colors.primary);
+    $('.send-button').css('background-color', colors.accent);
+    $('.message-content').css('background-color', colors.light);
+    $('.user-message .message-content').css('background-color', colors.secondary);
+    $('.user-message .message-content').css('color', colors.text);
+    $('.quick-btn').css('background-color', colors.light);
+    $('.quick-btn').hover(
+      function() { $(this).css('background-color', colors.secondary); },
+      function() { $(this).css('background-color', colors.light); }
+    );
+    $('.diagnosis').css('background-color', colors.light);
+    $('.recommendation').css('border-top-color', colors.primary);
+    $('.specialist-recommendation').css('color', colors.accent);
+    $('.emergency-warning').css('color', '#d9534f');
+  }
 });
 </script>
+
+<style>
+.medical-chatbot-container {
+  max-width: 800px;
+  margin: 0 auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5fafd;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(147, 188, 194, 0.3);
+  overflow: hidden;
+}
+
+.chatbot-header {
+  padding: 20px;
+  text-align: center;
+  color: #2c3e50;
+  border-bottom: 1px solid rgba(147, 188, 194, 0.5);
+}
+
+.chatbot-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.subtitle {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #5a6a7e;
+}
+
+.chatbot-body {
+  padding: 20px;
+}
+
+.chat-window {
+  height: 400px;
+  overflow-y: auto;
+  padding: 15px;
+  border: 1px solid #c2dde2;
+  border-radius: 12px;
+  margin-bottom: 15px;
+  background-color: white;
+  scroll-behavior: smooth;
+}
+
+.chat-message {
+  display: flex;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+}
+
+.user-message {
+  justify-content: flex-end;
+}
+
+.bot-message {
+  justify-content: flex-start;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  background-color: #93bcc2;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.user-message .avatar {
+  background-color: #6ba7b0;
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+.message-content {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 16px;
+  line-height: 1.5;
+  font-size: 15px;
+  color: #2c3e50;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.message-content h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  color: #2c3e50;
+}
+
+.message-content ul {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.message-content li {
+  margin-bottom: 5px;
+}
+
+.diagnosis {
+  background-color: #e8f4f8;
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 10px;
+  border-left: 4px solid #93bcc2;
+}
+
+.symptoms-summary {
+  margin-bottom: 15px;
+}
+
+.symptoms-summary p {
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+}
+
+.symptoms-summary i {
+  margin-right: 8px;
+  width: 20px;
+  text-align: center;
+  color: #6ba7b0;
+}
+
+.recommendation {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed #93bcc2;
+}
+
+.recommendation-text {
+  margin: 10px 0;
+  line-height: 1.6;
+}
+
+.specialist-recommendation {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f0f7fa;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.emergency-warning {
+  margin-top: 15px;
+  padding: 8px;
+  background-color: #f8e8e8;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.chat-form textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #c2dde2;
+  border-radius: 12px;
+  resize: none;
+  font-family: inherit;
+  margin-bottom: 12px;
+  background-color: #fbfdfe;
+  transition: all 0.3s;
+}
+
+.chat-form textarea:focus {
+  outline: none;
+  border-color: #6ba7b0;
+  box-shadow: 0 0 0 3px rgba(107, 167, 176, 0.2);
+}
+
+.input-group {
+  display: flex;
+  align-items: center;
+}
+
+.input-group textarea {
+  flex-grow: 1;
+  margin-right: 10px;
+}
+
+.send-button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 16px;
+  color: white;
+}
+
+.send-button:hover {
+  transform: scale(1.05);
+  background-color: #5a9ca6 !important;
+}
+
+.quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.quick-btn {
+  border: none;
+  border-radius: 18px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-btn i {
+  font-size: 14px;
+  color: #6ba7b0;
+}
+
+.disclaimer {
+  padding: 12px 15px;
+  font-size: 12px;
+  color: #5a6a7e;
+  text-align: center;
+  border-top: 1px solid #c2dde2;
+  background-color: #e8f4f8;
+}
+
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  height: 20px;
+}
+
+.typing-indicator span {
+  width: 8px;
+  height: 8px;
+  background-color: #6ba7b0;
+  border-radius: 50%;
+  display: inline-block;
+  margin: 0 2px;
+  animation: bounce 1.4s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.typing-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Styles for options */
+.options-container {
+  margin-top: 10px;
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.option-btn {
+  padding: 8px 12px;
+  background-color: #e8f4f8;
+  border: 1px solid #c2dde2;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  font-size: 14px;
+}
+
+.option-btn:hover {
+  background-color: #d4e8ee;
+  border-color: #93bcc2;
+}
+
+.intensity-scale {
+  margin-top: 15px;
+}
+
+.scale-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  font-size: 12px;
+  color: #5a6a7e;
+}
+
+.scale-options {
+  display: flex;
+  gap: 5px;
+}
+
+.scale-btn {
+  flex: 1;
+  padding: 6px 0;
+  background-color: #e8f4f8;
+  border: 1px solid #c2dde2;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.scale-btn:hover {
+  background-color: #d4e8ee;
+  border-color: #93bcc2;
+}
+
+.follow-up {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid #e0e0e0;
+}
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-5px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 600px) {
+  .chatbot-body {
+    padding: 15px;
+  }
+
+  .chat-window {
+    height: 350px;
+    padding: 12px;
+  }
+
+  .message-content {
+    max-width: 80%;
+    font-size: 14px;
+  }
+
+  .quick-actions {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .quick-btn {
+    padding: 6px 12px;
+  }
+
+  .options-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
 {% endblock %}

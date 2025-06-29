@@ -48,36 +48,114 @@ def pneuscan_view(request):
 
 
 
-import openai
-from django.http import JsonResponse
 from django.shortcuts import render
-from django.views.decorators.csrf import csrf_exempt
-import json
 
-openai.api_key = "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"  # Використовуй свій OpenAI API ключ
-
-# Відображення сторінки
 def mediclybot_view(request):
-    return render(request, "mediclybot.html")
-
-# Обробка повідомлень у чаті
-#@csrf_exempt
-def mediclybot_api(request):
+    response_text = ""
     if request.method == "POST":
-        try:
-            #return JsonResponse({"response": "Hello"}) # for debug
-            data = request.POST["data"]
-            data = json.loads(data)
-            user_message = data["message"]
-            # Запит до OpenAI
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": user_message}]
-            )
-            return JsonResponse({"response": user_message})
-            #return JsonResponse({"response": response["choices"][0]["message"]["content"]})
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=500)
+        symptoms = request.POST.get("symptoms")
+        response_text = rule_based_response(symptoms)
+    return render(request, "mediclybot.html", {"response": response_text})
+
+def rule_based_response(symptoms):
+    s = symptoms.lower()
+
+    if "кашель" in s or "задишка" in s or "чхання" in s:
+        return "Можливо у вас грип, застуда або пневмонія. Бажано звернутись до лікаря або зробити рентген."
+
+    elif "голова" in s or "нудота" in s or "запаморочення" in s:
+        return "Це може бути мігрень, отруєння або гіпотонія. Пийте воду, спробуйте відпочити."
+
+    elif "температура" in s or "гарячка" in s or "озноб" in s:
+        return "Підвищена температура часто свідчить про інфекційне захворювання. Рекомендовано зробити загальний аналіз крові."
+
+    elif "живіт" in s or "болить живіт" in s or "діарея" in s:
+        return "Симптоми вказують на проблеми з травленням, можливо отруєння або гастрит. Варто звернутись до гастроентеролога."
+
+    elif "висип" in s or "почервоніння" in s or "свербіж" in s:
+        return "Може бути алергія або шкірне захворювання. Уникайте алергенів, зверніться до дерматолога."
+
+    elif "болить серце" in s or "тягне у грудях" in s or "пульс" in s:
+        return "Серцеві симптоми — це серйозно. Якщо відчуваєте біль у грудях, негайно зверніться до швидкої допомоги."
+
+    elif "нема сил" in s or "втома" in s or "сонливість" in s:
+        return "Можливо, анемія або нестача вітамінів. Рекомендується здати загальний аналіз крові та перевірити рівень заліза."
+
+    elif "депресія" in s or "тривога" in s:
+        return "Симптоми можуть бути пов’язані з психологічним станом. Спробуйте поговорити з психологом."
+
     else:
-        return JsonResponse({"error": "Метод не підтримується"}, status=405)
+        return "Не вдалося точно визначити проблему. Спробуйте описати симптоми інакше або зверніться до лікаря."
+
+
+
+from django.shortcuts import render
+from django.db.models import Q
+
+from django.http import JsonResponse
+
+def search(request):
+    q = request.GET.get('q', '').strip()
+    diseases = Disease.objects.filter(name__icontains=q) if q else Disease.objects.none()
+    doctors  = Doctor.objects.filter(name__icontains=q)  if q else Doctor.objects.none()
+    return render(request, 'search_results.html', {
+        'query': q,
+        'diseases': diseases,
+        'doctors': doctors,
+    })
+
+def autocomplete(request):
+    term = request.GET.get('term', '').strip()
+    # Шукаємо в обох таблицях одночасно
+    dis = Disease.objects.filter(name__icontains=term).values_list('name', flat=True)[:5]
+    doc = Doctor .objects.filter(name__icontains=term).values_list('name', flat=True)[:5]
+    return JsonResponse(list(dis) + list(doc), safe=False)
+
+
+import os
+import numpy as np
+from django.conf import settings
+from django.shortcuts import render
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
+
+
+def pneuscan(request):
+    if request.method != "POST":
+        return render(request, "pneuscan.html", {"result": None})
+
+    if not request.FILES.get("file"):
+        return render(request, "pneuscan.html", {"result": "No file selected."})
+
+    try:
+        file = request.FILES["file"]
+        upload_path = os.path.join(settings.BASE_DIR, 'temp_upload.jpg')
+        with open(upload_path, 'wb+') as f:
+            for chunk in file.chunks():
+                f.write(chunk)
+
+        model_path = os.path.join(settings.BASE_DIR, 'disease', 'pneumonia_model.h5')
+        model = load_model(model_path)
+
+        img = image.load_img(upload_path, target_size=(150, 150), color_mode='grayscale')
+        img_array = image.img_to_array(img)
+        img_array = np.expand_dims(img_array, axis=0)
+        img_array = img_array / 255.0
+
+        prediction = model.predict(img_array)
+        probability = prediction[0][0]
+
+        if probability > 0.5:
+            result = "Normal (Pneumonia probability: {:.2f}%)".format(100 - probability * 100)
+        else:
+            result = "Pneumonia (Pneumonia probability: {:.2f}%)".format((1 - probability) * 100)
+
+    except Exception as e:
+        result = f"Error: {str(e)}"
+
+    finally:
+        if os.path.exists(upload_path):
+            os.remove(upload_path)
+
+    return render(request, "pneuscan.html", {"result": result})
 

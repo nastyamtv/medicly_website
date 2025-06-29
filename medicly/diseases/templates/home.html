@@ -2,61 +2,276 @@
 {% load static %}
 {% block content %}
 
-<!-- Логотип -->
-<section class="hero bg-light py-5">
-    <div class="container text-center">
-        <img src="{% static 'images/logo.jpg' %}" alt="Medicly Logo" class="mb-4" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover;">
-        <h1 class="display-4">Welcome to Medicly</h1>
-        <p class="lead">Your trusted partner in finding the best healthcare services.</p>
-        <a href="/diseases/doctors/" class="btn btn-primary btn-lg">Meet Our Doctors</a>
+<style>
+  /* Основні кольори */
+  :root {
+    --primary-color: #94bdc3;
+    --primary-light: #c2dde2;
+    --primary-dark: #6ba7b0;
+    --secondary-color: #f5f9ff;
+    --text-color: #2c3e50;
+    --light-gray: #f8fafc;
+  }
+
+  /* Глобальні стилі */
+  body {
+    background-color: white;
+    position: relative;
+    color: var(--text-color);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  /* Бокові декоративні лінії */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 6px;
+    background: linear-gradient(to bottom,
+      var(--primary-color) 0%,
+      var(--primary-light) 50%,
+      var(--primary-color) 100%);
+    z-index: 1000;
+  }
+
+  body::before { left: 0; }
+  body::after { right: 0; }
+
+  /* Герої-секція */
+  .hero-section {
+    background: linear-gradient(135deg, var(--light-gray) 0%, var(--secondary-color) 100%);
+    position: relative;
+    overflow: hidden;
+    padding: 5rem 0;
+  }
+
+  .hero-section::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 300px;
+    height: 300px;
+    background-color: rgba(148, 189, 195, 0.1);
+    border-radius: 50%;
+  }
+
+  /* Картки */
+  .feature-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    background-color: white;
+    box-shadow: 0 5px 15px rgba(148, 189, 195, 0.1);
+    overflow: hidden;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(148, 189, 195, 0.2);
+  }
+
+  /* Кнопки */
+  .btn-primary-custom {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary-custom:hover {
+    background-color: var(--primary-dark);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(148, 189, 195, 0.4);
+  }
+
+  .btn-outline-custom {
+    border: 2px solid var(--primary-color);
+    color: var(--primary-color);
+    background-color: transparent;
+    border-radius: 50px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+
+  .btn-outline-custom:hover {
+    background-color: var(--primary-color);
+    color: white;
+  }
+
+  /* Іконки */
+  .icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(148, 189, 195, 0.1);
+    color: var(--primary-color);
+    font-size: 2rem;
+    margin: 0 auto 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .feature-card:hover .icon-circle {
+    background-color: var(--primary-color);
+    color: white;
+    transform: scale(1.1);
+  }
+
+  /* Хвилястий роздільник */
+  .wave-divider {
+    position: relative;
+    height: 60px;
+    overflow: hidden;
+    background-color: white;
+  }
+
+  .wave-divider svg {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Картки лікарів */
+  .doctor-card {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(148, 189, 195, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .doctor-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(148, 189, 195, 0.2);
+  }
+
+  .doctor-card img {
+    transition: transform 0.5s ease;
+  }
+
+  .doctor-card:hover img {
+    transform: scale(1.05);
+  }
+
+  /* Секції */
+  .section-title {
+    color: var(--primary-dark);
+    position: relative;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 0;
+    width: 50px;
+    height: 3px;
+    background-color: var(--primary-color);
+    border-radius: 3px;
+  }
+</style>
+
+<!-- Хвилястий роздільник -->
+<div class="wave-divider">
+  <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
+    <path d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z" opacity=".25" fill="#94bdc3"></path>
+    <path d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z" opacity=".5" fill="#94bdc3"></path>
+    <path d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z" fill="#94bdc3"></path>
+  </svg>
+</div>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container text-center py-5" data-aos="fade-up">
+        <div class="logo-container mb-4">
+            <img src="{% static 'images/logo.jpg' %}" alt="Medicly Logo" class="rounded-circle shadow" style="width: 150px; height: 150px; object-fit: cover; border: 3px solid var(--primary-light);">
+        </div>
+        <h1 class="display-4 fw-bold mb-3" style="color: var(--primary-dark);">Welcome to Medicly</h1>
+        <p class="lead fs-4 mb-4" style="color: var(--text-color);">Compassionate healthcare powered by technology</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="/medicly/doctors/" class="btn btn-lg btn-primary-custom">
+                <i class="bi bi-people-fill me-2"></i>Our Doctors
+            </a>
+            <a href="/medicly/pneuscan/" class="btn btn-lg btn-outline-custom">
+                <i class="bi bi-robot me-2"></i>AI Diagnostics
+            </a>
+        </div>
     </div>
 </section>
 
 <!-- Features Section -->
-<section class="features py-5">
-    <div class="container">
-        <div class="row text-center">
-            <div class="col-md-4">
-                <div class="icon mb-3">
-                    <i class="fas fa-user-md fa-3x text-primary"></i>
+<section class="py-5 bg-white">
+    <div class="container py-5">
+        <div class="row g-4 text-center">
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="p-4 h-100 feature-card">
+                    <div class="icon-circle">
+                        <i class="bi bi-heart-pulse"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3" style="color: var(--primary-dark);">Advanced Diagnostics</h4>
+                    <p class="text-muted">Our AI-powered system provides accurate pneumonia detection from X-ray images with 93% accuracy.</p>
                 </div>
-                <h4>Experienced Doctors</h4>
-                <p>Our team includes top-rated doctors with years of experience in various fields.</p>
             </div>
-            <div class="col-md-4">
-                <div class="icon mb-3">
-                    <i class="fas fa-hand-holding-heart fa-3x text-primary"></i>
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="p-4 h-100 feature-card">
+                    <div class="icon-circle">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3" style="color: var(--primary-dark);">Expert Doctors</h4>
+                    <p class="text-muted">Team of certified specialists ready to provide second opinions and treatment plans.</p>
                 </div>
-                <h4>Patient-Centered Care</h4>
-                <p>We prioritize your health and well-being above all else.</p>
             </div>
-            <div class="col-md-4">
-                <div class="icon mb-3">
-                    <i class="fas fa-clinic-medical fa-3x text-primary"></i>
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="p-4 h-100 feature-card">
+                    <div class="icon-circle">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h4 class="fw-bold mb-3" style="color: var(--primary-dark);">Secure Platform</h4>
+                    <p class="text-muted">Your medical data is protected with enterprise-grade security and encryption.</p>
                 </div>
-                <h4>Modern Facilities</h4>
-                <p>Our network includes state-of-the-art clinics and hospitals.</p>
             </div>
         </div>
     </div>
 </section>
 
-<!-- About Doctors Section -->
-<section class="about-doctors bg-light py-5">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h2>Our Doctors</h2>
-            <p>Meet the professionals who make a difference.</p>
+<!-- Doctors Section -->
+<section class="py-5" style="background-color: var(--light-gray);">
+    <div class="container py-5">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h2 class="section-title fw-bold">Our Medical Specialists</h2>
+            <p class="lead text-muted">Meet our team of healthcare professionals</p>
         </div>
-        <div class="row">
+        <div class="row g-4">
             {% for doctor in doctors %}
-            <div class="col-md-4 mb-4">
-                <div class="card">
-                    <img src="{{ doctor.image.url }}" class="card-img-top" alt="{{ doctor.name }}">
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter|add:'1' }}00">
+                <div class="card h-100 doctor-card">
+                    <div class="card-img-top overflow-hidden" style="height: 250px;">
+                        <img src="{{ doctor.image.url }}" class="img-fluid w-100 h-100 object-fit-cover" alt="{{ doctor.name }}">
+                    </div>
                     <div class="card-body text-center">
-                        <h5 class="card-title">{{ doctor.name }}</h5>
-                        <p class="card-text">{{ doctor.degree }}</p>
-                        <a href="/diseases/doctors/{{ doctor.id }}/" class="btn btn-outline-primary btn-sm">View Profile</a>
+                        <h5 class="card-title fw-bold" style="color: var(--primary-dark);">{{ doctor.name }}</h5>
+                        <p style="color: var(--primary-color);" class="mb-2">{{ doctor.specialization }}</p>
+                        <p class="card-text text-muted small">{{ doctor.bio|truncatewords:15 }}</p>
+                    </div>
+                    <div class="card-footer bg-transparent border-0">
+                        <a href="/medicly/doctors/{{ doctor.id }}/" class="btn btn-primary-custom">
+                            View Profile
+                        </a>
                     </div>
                 </div>
             </div>
@@ -66,71 +281,73 @@
 </section>
 
 <!-- Testimonials Section -->
-<section class="testimonials py-5">
-    <div class="container text-center">
-        <h2>What Our Patients Say</h2>
-        <div class="row mt-4">
-            <div class="col-md-4">
-                <blockquote class="blockquote">
-                    <p>"The care I received was exceptional! The doctors are truly the best."</p>
-                    <footer class="blockquote-footer">Jane Doe</footer>
-                </blockquote>
-            </div>
-            <div class="col-md-4">
-                <blockquote class="blockquote">
-                    <p>"Medicly provided excellent service. I highly recommend them."</p>
-                    <footer class="blockquote-footer">John Smith</footer>
-                </blockquote>
-            </div>
-            <div class="col-md-4">
-                <blockquote class="blockquote">
-                    <p>"I felt cared for and respected throughout my entire treatment."</p>
-                    <footer class="blockquote-footer">Emily Johnson</footer>
-                </blockquote>
-            </div>
+<section class="py-5 bg-white">
+    <div class="container py-5">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h2 class="section-title fw-bold">Patient Experiences</h2>
+            <p class="lead text-muted">What our patients say about us</p>
         </div>
-    </div>
-</section>
-
-<!-- FAQ Section -->
-<section class="faq bg-light py-5">
-    <div class="container">
-        <h2 class="text-center">Frequently Asked Questions</h2>
-        <div class="accordion mt-4" id="faqAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingOne">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                        What services do you offer?
-                    </button>
-                </h2>
-                <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">
-                        We offer a wide range of healthcare services, including general practice, specialist consultations, and modern diagnostic procedures.
+        <div class="row g-4">
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="p-4 rounded-3 h-100 feature-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <img src="{% static 'images/user1.jpg' %}" class="rounded-circle" width="50" height="50" alt="User">
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 fw-bold">Jane Doe</h6>
+                            <small class="text-muted">Pneumonia Patient</small>
+                        </div>
                     </div>
+                    <p class="mb-0">"The AI system detected my pneumonia early, and the doctors provided excellent care. Highly recommended!"</p>
                 </div>
             </div>
-            <div class="accordion-item">
-                <h2 class="accordion-header" id="headingTwo">
-                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                        How can I book an appointment?
-                    </button>
-                </h2>
-                <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
-                    <div class="accordion-body">
-                        You can book an appointment through our website or by calling our customer service hotline.
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="p-4 rounded-3 h-100 feature-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <img src="{% static 'images/user2.jpg' %}" class="rounded-circle" width="50" height="50" alt="User">
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 fw-bold">John Smith</h6>
+                            <small class="text-muted">Regular Patient</small>
+                        </div>
                     </div>
+                    <p class="mb-0">"The diagnostic tool is incredibly accurate and saved me time. The doctors are very professional."</p>
+                </div>
+            </div>
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="p-4 rounded-3 h-100 feature-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="flex-shrink-0">
+                            <img src="{% static 'images/user3.jpg' %}" class="rounded-circle" width="50" height="50" alt="User">
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0 fw-bold">Emily Johnson</h6>
+                            <small class="text-muted">Family Medicine</small>
+                        </div>
+                    </div>
+                    <p class="mb-0">"As a doctor, I find the AI assistant very helpful for preliminary diagnostics. Great tool!"</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Footer -->
-<footer class="py-4 bg-dark text-white">
-    <div class="container text-center">
-        <p>© 2025 Medicly. All Rights Reserved.</p>
-        <p>Contact us: <a href="mailto:info@medicly.com" class="text-white">info@medicly.com</a> | Phone: +1 (800) 555-0199</p>
+<!-- CTA Section -->
+<section class="py-5" style="background-color: var(--primary-light);">
+    <div class="container py-5 text-center" data-aos="fade-up">
+        <h2 class="fw-bold mb-4" style="color: var(--primary-dark);">Ready to experience modern healthcare?</h2>
+        <p class="lead mb-5" style="color: var(--text-color);">Try our AI diagnostic tool or book an appointment with our specialists</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="/medicly/pneuscan/" class="btn btn-lg btn-primary-custom">
+                <i class="bi bi-robot me-2"></i>Try AI Diagnostics
+            </a>
+            <a href="/medicly/doctors/" class="btn btn-lg btn-outline-custom">
+                <i class="bi bi-calendar-check me-2"></i>Book Appointment
+            </a>
+        </div>
     </div>
-</footer>
+</section>
 
 {% endblock %}

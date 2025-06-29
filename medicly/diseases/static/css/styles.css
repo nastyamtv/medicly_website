@@ -1,0 +1,46 @@
+/* Бокові градієнтні лінії */
+body {
+  position: relative;
+  background-color: white;
+  min-height: 100vh;
+  padding-bottom: 60px; /* Для футера */
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: linear-gradient(
+    to bottom,
+    #94bdc3 0%,
+    #c2dde2 50%,
+    #94bdc3 100%
+  );
+  z-index: 1000;
+}
+
+body::before {
+  left: 0;
+}
+
+body::after {
+  right: 0;
+}
+
+/* Забезпечуємо правильне позиціонування контенту */
+main {
+  position: relative;
+  z-index: 1;
+  min-height: calc(100vh - 120px); /* Враховуємо навбар і футер */
+}
+
+/* Адаптація для мобільних */
+@media (max-width: 768px) {
+  body::before,
+  body::after {
+    width: 4px;
+  }
+}

@@ -113,8 +113,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-OPENAI_API_KEY = "sk-...uQIA"
-MediclyKey = "sk-...uQIA"
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
@@ -122,6 +120,8 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_URL = 'static/'
 MEDIA_URL = "/image/download/"
 MEDIA_ROOT = BASE_DIR
+
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 

@@ -1,15 +1,30 @@
-#chat-container {
-    max-width: 600px;
-    margin: 0 auto;
+:root {
+    --primary-blue: #3a7bd5;
+    --light-bg: #94bdc3;
+    --light-accent: b7d3d7;
+    --button-blue: #a8d0ff;
+    --dark-blue: #1a4b8c;
 }
 
-#chat-box {
-    border: 1px solid #ccc;
-    padding: 10px;
-    background-color: #fff;
-    border-radius: 5px;
+body {
+    background-color: var(--light-bg);
 }
 
-.input-group {
-    margin-top: 10px;
+.navbar {
+    background-color: white !important;
+    box-shadow: 0 2px 10px rgba(58, 123, 213, 0.1);
+}
+
+.btn-primary {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+}
+
+body {
+  background:
+    linear-gradient(90deg, #94bdc3 0px, #94bdc3 10px, transparent 10px) 0 0,
+    linear-gradient(90deg, transparent calc(100% - 10px), #94bdc3 calc(100% - 10px), #94bdc3 100%) 0 0;
+  background-color: white;
+  background-repeat: repeat-y;
+  background-size: 100% 100%;
 }

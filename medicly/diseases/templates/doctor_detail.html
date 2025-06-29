@@ -14,19 +14,19 @@
     <!-- Статістік -->
     <div class="row text-center mb-5">
       <div class="col-md-3">
-        <h2 class="display-6 text-primary">{{ doctor.patients }}</h2>
+        <h2 class="display-6" style="color: #93bcc2;">{{ doctor.patients }}</h2>
         <p class="text-muted">Happy Clients</p>
       </div>
       <div class="col-md-3">
-        <h2 class="display-6 text-primary">{{ doctor.projects }}</h2>
+        <h2 class="display-6" style="color: #93bcc2;">{{ doctor.projects }}</h2>
         <p class="text-muted">Operations</p>
       </div>
       <div class="col-md-3">
-        <h2 class="display-6 text-primary">{{ doctor.hours_support }}</h2>
+        <h2 class="display-6" style="color: #93bcc2;">{{ doctor.hours_support }}</h2>
         <p class="text-muted">Working hours</p>
       </div>
       <div class="col-md-3">
-        <h2 class="display-6 text-primary">{{ doctor.experience_years }}</h2>
+        <h2 class="display-6" style="color: #93bcc2;">{{ doctor.experience_years }}</h2>
         <p class="text-muted">Years of Experience</p>
       </div>
     </div>
@@ -39,8 +39,8 @@
         <div class="col-md-6 mb-3">
           <h5 class="text-secondary">{{ skill }}</h5>
           <div class="progress">
-            <div class="progress-bar bg-info" role="progressbar"
-                 style="width: {{ proficiency }}%;"
+            <div class="progress-bar" role="progressbar"
+                 style="width: {{ proficiency }}%; background-color: #93bcc2;"
                  aria-valuenow="{{ proficiency }}"
                  aria-valuemin="0"
                  aria-valuemax="100">

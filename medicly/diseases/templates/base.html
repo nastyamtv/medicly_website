@@ -1,7 +1,10 @@
 {% load static %}
+<!--<link rel="stylesheet" href="{% static 'css/styles.css' %}"> -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Medicly</title>
@@ -27,22 +30,22 @@
                 <!-- Лівий блок навбару -->
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="/diseases/home/">Home</a>
+                        <a class="nav-link" href="/medicly/home/">Home</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'diseases' %}">Diseases</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/diseases/doctors/">Doctors</a>
+                        <a class="nav-link" href="/medicly/doctors/">Doctors</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/diseases/pneuscan/">Model</a>
+                        <a class="nav-link" href="/medicly/pneuscan/">Model</a>
                     </li>
                 </ul>
                 <!-- Правий блок навбару -->
                 <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link" href="/diseases/mediclybot/">Medicly.ai</a>
+                        <a class="nav-link" href="/medicly/mediclybot/">MediclyChat</a>
                     </li>
 
                 </ul>
@@ -57,7 +60,7 @@
                         Language
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="languageDropdown">
-                        <li><a class="dropdown-item" href="?lang=en">English Or Spanish?</a></li>
+                        <li><a class="dropdown-item" href="?lang=en">English</a></li>
                         <li><a class="dropdown-item" href="?lang=uk">Українська</a></li>
 
                     </ul>
@@ -88,6 +91,11 @@
         });
     </script>
 
+    <!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     {% block script_block %}{% endblock %}
 </body>
+
+
 </html>

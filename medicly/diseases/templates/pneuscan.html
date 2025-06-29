@@ -1,32 +1,76 @@
 {% extends "base.html" %}
 {% load static %}
+
 {% block content %}
+<style>
+    .pneuscan-container {
+        max-width: 600px;
+        margin: 60px auto;
+        background: #ffffff;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
 
-<div class="container mt-4">
-    <h1>Модель аналізу захворювань</h1>
-    <p>Ця сторінка використовується для роботи з моделлю діагностики захворювань.</p>
+    .pneuscan-container h1 {
+        text-align: center;
+        margin-bottom: 25px;
+        color: #2a2a2a;
+    }
 
-    <div class="row">
-        <!-- Ліва частина: завантаження файлу -->
-        <div class="col-md-6">
-            <form action="{% url 'pneuscan' %}" method="post" enctype="multipart/form-data">
-                {% csrf_token %}
-                <label for="file">Завантажити зображення:</label>
-                <input type="file" id="file" name="file" class="form-control mb-3">
-                <button type="submit" class="btn btn-primary">Аналізувати</button>
-            </form>
+    .pneuscan-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .pneuscan-form label {
+        font-size: 18px;
+        margin-bottom: 5px;
+    }
+
+    .pneuscan-form input[type="file"] {
+        font-size: 16px;
+    }
+
+    .pneuscan-form button {
+        background-color: #95bbc3;
+        color: white;
+        padding: 12px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .pneuscan-form button:hover {
+        background-color: #7ea5b1;
+    }
+
+    .pneuscan-result {
+        margin-top: 20px;
+        font-size: 20px;
+        text-align: center;
+        font-weight: bold;
+        color: #1e3d4e;
+    }
+</style>
+
+<div class="pneuscan-container">
+    <h1>Pneumonia Scan</h1>
+
+    <form method="post" enctype="multipart/form-data" class="pneuscan-form">
+        {% csrf_token %}
+        <div>
+            <label for="file">Upload Image:</label>
+            <input type="file" name="file" id="file" required>
         </div>
+        <button type="submit">Check</button>
+    </form>
 
-        <!-- Права частина: вивід результату -->
-        <div class="col-md-6">
-            <h4>Результат аналізу:</h4>
-            {% if result %}
-                <div class="alert alert-info">{{ result }}</div>
-            {% else %}
-                <div class="alert alert-secondary">Немає результату</div>
-            {% endif %}
-        </div>
-    </div>
+    {% if result %}
+        <div class="pneuscan-result">Result: {{ result }}</div>
+    {% endif %}
 </div>
-
 {% endblock %}
